@@ -228,11 +228,22 @@ def amortize():
         df["CumulativeInterest"] = df["Interest"].cumsum()
         df["CumulativePrincipal"] = df["Principal"].cumsum()
 
-        rows = df.round(2).to_dict(orient="records")
+        # Round monetary columns to 2dp but preserve Rate precision (5dp)
+        # so the frontend can display e.g. 4.10% correctly instead of 4.00%
+        for col in ["Interest", "Principal", "Balance", "CumulativeInterest", "CumulativePrincipal"]:
+            df[col] = df[col].round(2)
+        df["Rate"] = df["Rate"].round(5)
+
+        rows = df.to_dict(orient="records")
         return jsonify({"rows": rows, "strategy": strategy})
 
     except Exception:
         return jsonify({"error": traceback.format_exc()}), 500
+
+
+@app.route("/methodology")
+def methodology():
+    return render_template("methodology.html")
 
 
 if __name__ == "__main__":

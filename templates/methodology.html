@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Methodology — Mortgage Rate Strategy</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <!-- MathJax 3 for LaTeX rendering -->
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(','\\)'], ['$','$']], displayMath: [['\\[','\\]'], ['$$','$$']], tags: 'ams' },
+      options: { skipHtmlTags: ['script','noscript','style','textarea'] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" crossorigin="anonymous" async></script>
+
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <style>
+    body { background: #f5f7fa; }
+
+    .method-hero {
+      background: linear-gradient(135deg, #0d2137 0%, #1f6aa5 55%, #2a9d8f 100%);
+      color: #fff;
+      padding: 3rem 0 2.5rem;
+    }
+    .method-hero h1 { font-size: 2rem; font-weight: 700; }
+    .method-hero p  { color: rgba(255,255,255,0.82); max-width: 680px; }
+
+    .section-card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 2rem 2.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .section-card h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #1a3a5c;
+      border-left: 4px solid #1f6aa5;
+      padding-left: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-card h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #2a5c8a;
+      margin-top: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .formula-box {
+      background: #f0f4f8;
+      border-left: 4px solid #1f6aa5;
+      border-radius: 6px;
+      padding: 1rem 1.5rem;
+      margin: 1rem 0;
+      overflow-x: auto;
+    }
+
+    .param-table th { background: #1a3a5c; color: #fff; font-size: 0.82rem; }
+    .param-table td { font-size: 0.85rem; vertical-align: middle; }
+    .param-table code { background: #e8f0fe; padding: 1px 5px; border-radius: 3px; color: #1a237e; }
+
+    .strategy-badge {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-right: 0.4rem;
+    }
+    .badge-fixed    { background: #dbeafe; color: #1f4e79; }
+    .badge-variable { background: #fef3c7; color: #92400e; }
+    .badge-hedged   { background: #dcfce7; color: #14532d; }
+    .badge-stress   { background: #fee2e2; color: #7f1d1d; }
+
+    .insight-box {
+      background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-top: 1.25rem;
+    }
+    .insight-box .insight-title {
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 0.4rem;
+    }
+
+    .toc a { color: #1f6aa5; text-decoration: none; font-size: 0.9rem; }
+    .toc a:hover { text-decoration: underline; }
+    .toc li { margin-bottom: 0.3rem; }
+
+    @media print {
+      .no-print { display: none !important; }
+      .section-card { box-shadow: none; border: 1px solid #dee2e6; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar navbar-dark bg-primary-dark sticky-top shadow-sm no-print">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+      <i class="bi bi-house-check-fill fs-5"></i>
+      <span class="fw-bold">Mortgage Rate Strategy</span>
+    </a>
+    <div class="ms-auto d-flex align-items-center gap-3">
+      <span class="text-white-50 small d-none d-md-block">Designed by Kingsley Emelideme</span>
+      <a href="/" class="btn btn-outline-light btn-sm"><i class="bi bi-arrow-left me-1"></i>Back to Analyser</a>
+      <button onclick="window.print()" class="btn btn-outline-light btn-sm"><i class="bi bi-printer me-1"></i>Print / PDF</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="method-hero">
+  <div class="container">
+    <p class="text-uppercase small fw-semibold mb-2" style="letter-spacing:.1em; color:rgba(255,255,255,0.6);">
+      Technical Reference &amp; Strategy Overview
+    </p>
+    <h1>Methodology &amp; Model Formulation</h1>
+    <p class="mt-2 mb-0">
+      A plain-language and mathematical explanation of the Vasicek stochastic rate model,
+      amortization engine, and mortgage strategy comparison framework — for both technical users
+      and senior management.
+    </p>
+  </div>
+</div>
+
+<!-- Main content -->
+<div class="container py-5">
+  <div class="row g-4">
+
+    <!-- Table of Contents (sidebar) -->
+    <div class="col-lg-3 no-print">
+      <div class="sticky-top" style="top:70px;">
+        <div class="section-card py-3 px-3">
+          <h6 class="text-uppercase fw-bold text-muted mb-3" style="font-size:.72rem; letter-spacing:.1em;">Contents</h6>
+          <ol class="toc ps-3">
+            <li><a href="#sec-overview">What This Tool Does</a></li>
+            <li><a href="#sec-strategies">The Four Strategies</a></li>
+            <li><a href="#sec-amortization">Amortization Model</a></li>
+            <li><a href="#sec-vasicek">Vasicek Rate Model</a></li>
+            <li><a href="#sec-euler">Euler–Maruyama Discretisation</a></li>
+            <li><a href="#sec-opportunity">Opportunity Cost</a></li>
+            <li><a href="#sec-fisher">Break-Even Inflation</a></li>
+            <li><a href="#sec-convexity">Lump-Sum Convexity</a></li>
+            <li><a href="#sec-parameters">Parameter Reference</a></li>
+            <li><a href="#sec-management">Management Summary</a></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="col-lg-9">
+
+      <!-- 1. Overview -->
+      <div class="section-card" id="sec-overview">
+        <h2><i class="bi bi-info-circle me-2"></i>1. What This Tool Does</h2>
+        <p>
+          The <strong>Mortgage Rate Strategy Analyser</strong> is an Asset-Liability Management (ALM) tool
+          that helps borrowers, financial advisors, and treasury teams make an <em>evidence-based</em> decision
+          between a <strong>fixed-rate</strong> and a <strong>variable-rate</strong> mortgage — or a hybrid
+          of both.
+        </p>
+        <p>
+          The core question it answers is: <em>"Given uncertainty about future interest rates, which mortgage
+          strategy minimises total interest cost, and what is the cost of that certainty?"</em>
+        </p>
+        <p>
+          It answers this through four analytical layers:
+        </p>
+        <ul>
+          <li><strong>Deterministic amortization</strong> — exact schedules under flat-rate assumptions for each strategy.</li>
+          <li><strong>Stochastic rate simulation</strong> — Monte Carlo paths of future short rates using the Vasicek model,
+              revealing the probabilistic distribution of outcomes for a variable-rate borrower.</li>
+          <li><strong>Opportunity cost analysis</strong> — models what happens if the payment savings from choosing variable
+              are invested in an equity portfolio instead of prepaying debt.</li>
+          <li><strong>Sensitivity analysis</strong> — convexity of lump-sum prepayments and break-even inflation thresholds.</li>
+        </ul>
+      </div>
+
+      <!-- 2. Strategies -->
+      <div class="section-card" id="sec-strategies">
+        <h2><i class="bi bi-diagram-3 me-2"></i>2. The Four Strategies Compared</h2>
+        <p>
+          Every analysis compares four scenarios side-by-side:
+        </p>
+
+        <div class="table-responsive">
+          <table class="table table-bordered param-table">
+            <thead>
+              <tr>
+                <th>Strategy</th>
+                <th>Payment Used</th>
+                <th>Rate Used</th>
+                <th>Lump Sum</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="strategy-badge badge-fixed">Fixed Baseline</span></td>
+                <td>Fixed payment \(M_f\)</td>
+                <td>Fixed rate \(r_f\) throughout</td>
+                <td>None</td>
+                <td>Certainty benchmark — locks in known cost</td>
+              </tr>
+              <tr>
+                <td><span class="strategy-badge badge-variable">Standard Variable</span></td>
+                <td>Lower variable payment \(M_v\)</td>
+                <td>Variable rate \(r_v\) (flat assumption)</td>
+                <td>None</td>
+                <td>Lower cost if rates stay flat or fall</td>
+              </tr>
+              <tr>
+                <td><span class="strategy-badge badge-hedged">Hedged Variable</span></td>
+                <td>Fixed payment \(M_f\) at variable rate</td>
+                <td>Variable rate \(r_v\)</td>
+                <td>\(\$L\) at month \(k\)</td>
+                <td>Best of both: variable rate, fixed-rate discipline, accelerated paydown</td>
+              </tr>
+              <tr>
+                <td><span class="strategy-badge badge-stress">Stress (+2%)</span></td>
+                <td>Stressed payment</td>
+                <td>\(r_v + 2\%\) throughout</td>
+                <td>None</td>
+                <td>Regulatory / affordability stress test</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="insight-box">
+          <div class="insight-title"><i class="bi bi-lightbulb-fill me-1"></i>Key Insight for Decision-Making</div>
+          The <strong>Hedged Variable</strong> strategy is typically the most efficient: the borrower benefits
+          from the lower variable rate but maintains the higher fixed payment, so every dollar of payment delta
+          attacks the principal directly — compounding the savings over the full amortization period.
+        </div>
+      </div>
+
+      <!-- 3. Amortization -->
+      <div class="section-card" id="sec-amortization">
+        <h2><i class="bi bi-calculator me-2"></i>3. Amortization Model</h2>
+
+        <h3>3.1 Level-Payment (Annuity) Formula</h3>
+        <p>
+          The standard monthly payment \(M\) for a loan of principal \(P\), annual nominal rate \(r\),
+          over \(n\) total amortization months is:
+        </p>
+        <div class="formula-box">
+          $$M = P \cdot \frac{r_m \,(1 + r_m)^n}{(1 + r_m)^n - 1}$$
+        </div>
+        <p>where \(r_m = r / 12\) is the monthly rate.</p>
+
+        <h3>3.2 Monthly Decomposition</h3>
+        <p>At each month \(t\), the payment splits into:</p>
+        <div class="formula-box">
+          $$\text{Interest}_t = B_{t-1} \cdot r_m \qquad \text{Principal}_t = M - \text{Interest}_t \qquad B_t = \max(0,\; B_{t-1} - \text{Principal}_t)$$
+        </div>
+        <p>
+          where \(B_t\) is the outstanding balance after payment \(t\). The balance declines slowly in
+          early months (most of \(M\) is interest) and accelerates toward zero as the loan matures —
+          the characteristic convex amortization profile visible in the <em>Balance Trajectories</em> chart.
+        </p>
+
+        <h3>3.3 Lump-Sum Prepayment</h3>
+        <p>
+          When a prepayment \(L\) is applied at month \(k\), it reduces the balance <em>after</em>
+          the regular payment for that month:
+        </p>
+        <div class="formula-box">
+          $$B_k = \max\!\left(0,\; B_{k-1} - \text{Principal}_k - \min(L,\, B_{k-1} - \text{Principal}_k)\right)$$
+        </div>
+        <p>
+          Because the reduced balance compounds for the remaining \(n - k\) months, the interest saving
+          from a prepayment is highly non-linear (see <em>§8 Convexity</em>).
+        </p>
+      </div>
+
+      <!-- 4. Vasicek -->
+      <div class="section-card" id="sec-vasicek">
+        <h2><i class="bi bi-activity me-2"></i>4. The Vasicek Interest Rate Model</h2>
+
+        <h3>4.1 Motivation</h3>
+        <p>
+          A fixed-rate mortgage eliminates rate uncertainty entirely, but at a cost premium. A variable-rate
+          mortgage exposes the borrower to future rate movements. To <em>quantify</em> that exposure, we need a
+          stochastic model of how rates evolve over time.
+        </p>
+        <p>
+          The <strong>Vasicek (1977)</strong> model is one of the most widely used equilibrium short-rate
+          models in fixed-income risk management. It captures two empirically observed features of interest
+          rates:
+        </p>
+        <ul>
+          <li><strong>Mean reversion</strong> — rates tend to drift back toward a long-run equilibrium \(\theta\)
+              (central bank policy anchor). When rates are above \(\theta\), the drift is negative; when below, positive.</li>
+          <li><strong>Random shocks</strong> — rates are continuously disturbed by unpredictable market forces,
+              modelled as a Brownian motion \(W_t\).</li>
+        </ul>
+
+        <h3>4.2 The Stochastic Differential Equation (SDE)</h3>
+        <p>
+          The Vasicek model defines the instantaneous change in the short rate \(r_t\) as:
+        </p>
+        <div class="formula-box">
+          $$\boxed{dr_t = \kappa\,(\theta - r_t)\,dt + \sigma\,dW_t}$$
+        </div>
+
+        <div class="table-responsive mt-3">
+          <table class="table table-bordered param-table">
+            <thead><tr><th>Symbol</th><th>Name</th><th>Interpretation</th><th>Typical Value</th></tr></thead>
+            <tbody>
+              <tr><td><code>κ</code> (kappa)</td><td>Mean-reversion speed</td><td>How quickly rates snap back to \(\theta\). Higher \(\kappa\) = faster reversion.</td><td>0.10 – 0.50</td></tr>
+              <tr><td><code>θ</code> (theta)</td><td>Long-run equilibrium</td><td>The rate level rates are attracted to over time. Calibrated to central bank targets.</td><td>2.5% – 4.5%</td></tr>
+              <tr><td><code>σ</code> (sigma)</td><td>Instantaneous volatility</td><td>Magnitude of random shocks. Higher \(\sigma\) = wider fan chart bands.</td><td>0.8% – 1.5%</td></tr>
+              <tr><td><code>dW_t</code></td><td>Brownian increment</td><td>Random shock: \(dW_t \sim \mathcal{N}(0, dt)\)</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>4.3 Analytical Properties</h3>
+        <p>The Vasicek model has a closed-form solution. Conditional on \(r_0\), the rate at time \(T\) is normally distributed:</p>
+        <div class="formula-box">
+          $$r_T \;\sim\; \mathcal{N}\!\left(\theta + (r_0 - \theta)\,e^{-\kappa T},\;\; \frac{\sigma^2}{2\kappa}\!\left(1 - e^{-2\kappa T}\right)\right)$$
+        </div>
+        <p>
+          The mean reverts exponentially from \(r_0\) toward \(\theta\) at speed \(\kappa\).
+          The variance grows initially and saturates at \(\sigma^2 / (2\kappa)\) — which is why the fan chart
+          widens and then stabilises.
+        </p>
+
+        <div class="insight-box">
+          <div class="insight-title"><i class="bi bi-exclamation-triangle-fill me-1"></i>Limitation to Note</div>
+          The Vasicek model allows negative rates, which is theoretically possible but practically constrained.
+          This tool applies a <strong>rate floor</strong> (default 2.25%) to clip simulated paths — matching
+          the Bank of Canada's effective lower bound convention. Alternative models (CIR, Hull-White) guarantee
+          non-negativity but are more complex to calibrate.
+        </div>
+      </div>
+
+      <!-- 5. Euler–Maruyama -->
+      <div class="section-card" id="sec-euler">
+        <h2><i class="bi bi-cpu me-2"></i>5. Euler–Maruyama Discretisation (Monte Carlo)</h2>
+
+        <h3>5.1 From Continuous to Discrete Time</h3>
+        <p>
+          To simulate thousands of rate paths on a computer, the continuous SDE is discretised to monthly steps
+          \(\Delta t = \tfrac{1}{12}\) using the <strong>Euler–Maruyama</strong> scheme:
+        </p>
+        <div class="formula-box">
+          $$r_{t+\Delta t} = \max\!\left(r_{\text{floor}},\;\; r_t + \kappa(\theta - r_t)\,\Delta t + \sigma\sqrt{\Delta t}\;Z_t\right)$$
+        </div>
+        <p>where \(Z_t \sim \mathcal{N}(0,1)\) is a standard normal random draw, independent across time and paths.</p>
+
+        <h3>5.2 Vectorized Implementation</h3>
+        <p>
+          All \(N\) paths (default 2,000) are simulated simultaneously in a matrix of shape
+          \((\text{months} \times N)\). At each time step \(t\), the update is:
+        </p>
+        <div class="formula-box">
+          $$\mathbf{r}_{t+1} = \max\!\left(r_{\text{floor}},\;\; \mathbf{r}_t + \kappa(\theta - \mathbf{r}_t)\,\Delta t + \sigma\sqrt{\Delta t}\;\mathbf{Z}_t\right)$$
+        </div>
+        <p>
+          where bold denotes the \(N\)-dimensional vector of all paths. NumPy broadcasts this across all paths
+          in a single operation, making 10,000 paths feasible in under 2 seconds.
+        </p>
+
+        <h3>5.3 Fan Chart Interpretation</h3>
+        <p>The fan chart plots cross-sectional percentiles across all simulated paths at each month:</p>
+        <ul>
+          <li><strong>P50 (median)</strong> — the most likely rate trajectory.</li>
+          <li><strong>P10 / P90 band</strong> — 80% of all simulated scenarios fall within this range.</li>
+          <li><strong>P25 / P75 band</strong> — the interquartile range (50% of scenarios).</li>
+        </ul>
+        <p>
+          The MC histogram tab shows the resulting distribution of <em>total interest paid</em> over the term —
+          the quantity that directly affects the borrower's out-of-pocket cost.
+        </p>
+      </div>
+
+      <!-- 6. Opportunity Cost -->
+      <div class="section-card" id="sec-opportunity">
+        <h2><i class="bi bi-graph-up-arrow me-2"></i>6. Opportunity Cost — Invest-the-Difference</h2>
+        <p>
+          Choosing the variable rate frees up the monthly payment delta \(\delta = M_f - M_v\) each month.
+          The <em>invest-the-difference</em> model asks: <strong>what if this saving were invested in equities</strong>
+          instead of used to pay down the mortgage faster?
+        </p>
+        <p>
+          If the equity portfolio compounds at CAGR \(g\), the monthly growth factor is:
+        </p>
+        <div class="formula-box">
+          $$\mu_m = (1 + g)^{1/12} - 1$$
+        </div>
+        <p>The portfolio value at month \(t\) evolves as:</p>
+        <div class="formula-box">
+          $$V_t = (V_{t-1} + c_t)\,(1 + \mu_m), \qquad c_t = \delta + L \cdot \mathbf{1}[t = k]$$
+        </div>
+        <p>
+          where \(c_t\) is the total monthly contribution (payment delta plus any lump sum in month \(k\)).
+          The terminal value \(V_{60}\) is compared against the interest savings of the Hedged strategy to
+          determine which creates more wealth.
+        </p>
+
+        <div class="insight-box">
+          <div class="insight-title"><i class="bi bi-lightbulb-fill me-1"></i>Decision Rule</div>
+          If \(V_{60} > \text{Interest Saving (Hedged vs. Fixed)}\), investing the delta outperforms
+          prepaying the mortgage. The crossover depends on the equity CAGR assumption relative to the
+          mortgage rate — a classic <em>debt vs. invest</em> trade-off.
+        </div>
+      </div>
+
+      <!-- 7. Fisher -->
+      <div class="section-card" id="sec-fisher">
+        <h2><i class="bi bi-percent me-2"></i>7. Break-Even Inflation — Fisher Equation</h2>
+        <p>
+          A nominal mortgage rate \(i\) can be decomposed into a real cost of borrowing \(r\) and
+          an inflation compensation component \(\pi\) via the <strong>Fisher Equation</strong>:
+        </p>
+        <div class="formula-box">
+          $$(1 + i) = (1 + r)(1 + \pi) \approx 1 + r + \pi \quad\Longrightarrow\quad \pi \approx i - r$$
+        </div>
+        <p>
+          Setting \(r = 0\) gives the <strong>break-even inflation rate</strong> \(\hat{\pi}\):
+        </p>
+        <div class="formula-box">
+          $$\hat{\pi} = i$$
+        </div>
+        <p>
+          This is the inflation rate at which the <em>real cost</em> of the debt is zero.
+          If actual inflation exceeds \(\hat{\pi}\), the borrower is being paid (in real terms)
+          to hold debt — a strong argument for locking in a fixed rate for as long as possible.
+          If inflation is below \(\hat{\pi}\), the real burden of debt is positive.
+        </p>
+      </div>
+
+      <!-- 8. Convexity -->
+      <div class="section-card" id="sec-convexity">
+        <h2><i class="bi bi-bezier2 me-2"></i>8. Lump-Sum Convexity</h2>
+        <p>
+          The interest saving from a prepayment \(L\) is a <strong>convex</strong>, non-linear function of \(L\).
+          Let \(I(L)\) denote total interest paid over the term as a function of lump-sum size. Then:
+        </p>
+        <div class="formula-box">
+          $$\text{Marginal Saving}(L) = -\frac{\partial I}{\partial L} > 0$$
+          $$\text{Convexity} = -\frac{\partial^2 I}{\partial L^2}$$
+        </div>
+        <p>
+          In the discrete approximation (sweeping \(L\) in $5,000 increments):
+        </p>
+        <div class="formula-box">
+          $$\text{Marginal Saving}_j = I(L_{j-1}) - I(L_j), \qquad \text{Convexity}_j = \text{Marginal Saving}_j - \text{Marginal Saving}_{j-1}$$
+        </div>
+        <p>
+          Positive convexity means each additional dollar prepaid saves <em>more</em> than the previous dollar.
+          In practice, convexity is highest for prepayments made <em>early in the amortization period</em>
+          because the balance is still large and there are many compounding months ahead for the saving to accumulate.
+        </p>
+      </div>
+
+      <!-- 9. Parameters -->
+      <div class="section-card" id="sec-parameters">
+        <h2><i class="bi bi-table me-2"></i>9. Full Parameter Reference</h2>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover param-table">
+            <thead>
+              <tr>
+                <th>Parameter</th>
+                <th>Symbol</th>
+                <th>Default</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Principal</td><td>\(P\)</td><td>$360,404</td><td>Initial outstanding mortgage balance (CAD)</td></tr>
+              <tr><td>Amortization</td><td>\(n\)</td><td>20 years (240 months)</td><td>Full loan repayment horizon</td></tr>
+              <tr><td>Term</td><td>—</td><td>60 months</td><td>Evaluation / renewal window (typically 5 years in Canada)</td></tr>
+              <tr><td>Fixed rate</td><td>\(r_f\)</td><td>4.10%</td><td>Annual nominal rate for fixed-rate mortgage</td></tr>
+              <tr><td>Variable rate start</td><td>\(r_v\)</td><td>3.35%</td><td>Initial annual variable rate (Bank of Canada prime-linked)</td></tr>
+              <tr><td>Lump-sum amount</td><td>\(L\)</td><td>$25,000</td><td>One-time prepayment applied at month \(k\)</td></tr>
+              <tr><td>Lump-sum month</td><td>\(k\)</td><td>12</td><td>Month in which the lump sum is applied (1-indexed)</td></tr>
+              <tr><td>Mean reversion speed</td><td>\(\kappa\)</td><td>0.35</td><td>Vasicek mean-reversion speed toward \(\theta\)</td></tr>
+              <tr><td>Long-run rate</td><td>\(\theta\)</td><td>3.5%</td><td>Vasicek equilibrium rate (calibrated to BoC neutral rate)</td></tr>
+              <tr><td>Rate volatility</td><td>\(\sigma\)</td><td>1.2%</td><td>Vasicek instantaneous volatility of rate changes</td></tr>
+              <tr><td>Rate floor</td><td>\(r_{\text{floor}}\)</td><td>2.25%</td><td>Hard lower bound on simulated rates (effective lower bound)</td></tr>
+              <tr><td>Equity CAGR</td><td>\(g\)</td><td>7.0%</td><td>Assumed long-run equity portfolio growth (opportunity cost)</td></tr>
+              <tr><td>Simulations</td><td>\(N\)</td><td>2,000</td><td>Number of Monte Carlo rate paths</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 10. Management Summary -->
+      <div class="section-card" id="sec-management">
+        <h2><i class="bi bi-person-badge me-2"></i>10. Management Summary — What This Means for You</h2>
+
+        <p class="lead text-muted">
+          The following section is written for clients and senior management who need to understand the
+          strategic implications without the mathematical detail.
+        </p>
+
+        <h3>The Core Trade-Off</h3>
+        <p>
+          When you choose a <strong>fixed-rate mortgage</strong>, you are purchasing <em>certainty</em>.
+          You know exactly what your payment will be for the full term, regardless of what happens
+          to interest rates. That certainty has a price: fixed rates are typically higher than variable
+          rates at the time of signing.
+        </p>
+        <p>
+          A <strong>variable-rate mortgage</strong> starts cheaper, but your payments — and total interest
+          cost — can rise if the Bank of Canada increases rates. You are accepting some risk in exchange
+          for a lower starting cost.
+        </p>
+
+        <h3>What "Hedged Variable" Actually Means</h3>
+        <p>
+          The most powerful strategy in this tool is the <strong>Hedged Variable</strong>. Here, you
+          take the variable rate (lower interest cost) but continue making the <em>higher</em> fixed-rate
+          payment voluntarily. The difference does not go to the bank as interest — it attacks your
+          principal directly.
+        </p>
+        <p>
+          This means you pay down your mortgage faster than either the pure fixed or pure variable
+          borrower, while also benefiting from the lower rate. Adding a one-time lump-sum payment
+          amplifies this further, because every dollar off the principal today eliminates all future
+          interest on that dollar.
+        </p>
+
+        <h3>What the Monte Carlo Simulation Tells You</h3>
+        <p>
+          Rather than assuming rates will stay flat, the <strong>fan chart</strong> shows thousands of
+          plausible rate paths — high, low, and everything in between — consistent with how rates have
+          historically behaved. The <strong>histogram</strong> shows the distribution of what your
+          total interest bill would be across all those scenarios.
+        </p>
+        <p>
+          If the bulk of that distribution is still below the fixed-rate total, variable wins even in
+          most adverse scenarios. If it overlaps significantly with — or exceeds — the fixed-rate line,
+          the certainty of a fixed rate becomes more attractive.
+        </p>
+
+        <h3>The Invest-the-Difference Question</h3>
+        <p>
+          One legitimate alternative to prepaying your mortgage is to invest the savings. If equity
+          markets return more than your mortgage rate (after tax), you are better off letting the
+          cheap debt run and growing your wealth elsewhere. The <strong>Opportunity Cost</strong> chart
+          quantifies this trade-off directly.
+        </p>
+
+        <h3>Key Takeaways at a Glance</h3>
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body">
+                <h6 class="fw-bold text-primary mb-2"><i class="bi bi-check-circle-fill me-1"></i>Choose Fixed If…</h6>
+                <ul class="small mb-0">
+                  <li>You need payment certainty for budgeting</li>
+                  <li>You expect rates to rise significantly</li>
+                  <li>Current inflation is near or above the break-even rate</li>
+                  <li>The rate spread between fixed and variable is unusually narrow</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card border-0 bg-light h-100">
+              <div class="card-body">
+                <h6 class="fw-bold text-success mb-2"><i class="bi bi-check-circle-fill me-1"></i>Choose Hedged Variable If…</h6>
+                <ul class="small mb-0">
+                  <li>The variable rate is meaningfully below fixed (≥ 50 bps)</li>
+                  <li>You can absorb short-term payment fluctuations</li>
+                  <li>You have surplus cash for a lump sum in Year 1</li>
+                  <li>P50 Monte Carlo outcome is favourable vs. fixed</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="insight-box mt-4">
+          <div class="insight-title"><i class="bi bi-shield-check me-1"></i>Disclaimer</div>
+          This tool is an analytical aid for informed decision-making. It is not financial advice.
+          All Monte Carlo projections are based on model assumptions that may not reflect actual
+          future market conditions. Always consult a licensed mortgage advisor or financial planner
+          before making mortgage decisions.
+        </div>
+      </div>
+
+    </div><!-- /col-lg-9 -->
+  </div><!-- /row -->
+</div><!-- /container -->
+
+<!-- Footer -->
+<footer class="footer py-3 bg-light border-top mt-4">
+  <div class="container text-center text-muted small">
+    Mortgage Rate Strategy Engine &mdash; Methodology Reference &mdash;
+    Vasicek (1977), Fisher (1930), Euler–Maruyama Discretisation
+    &mdash; <strong>Designed by Kingsley Emelideme</strong>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
