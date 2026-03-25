@@ -45,15 +45,28 @@ class MortgageParams:
         term_months: Evaluation / renewal window (default 60 = 5 yr).
     """
 
-    principal: float = 360_404.0
-    amortization_years: int = 20
+    principal: float = 100_000.0
+    amortization_years: int = 25
     fixed_rate: float = 0.0410
     var_rate_start: float = 0.0335
     term_months: int = 60
+    payment_frequency: str = "monthly"  # "monthly", "biweekly", or "weekly"
+
+    @property
+    def periods_per_year(self) -> int:
+        return {"monthly": 12, "biweekly": 26, "weekly": 52}.get(self.payment_frequency, 12)
 
     @property
     def total_months(self) -> int:
         return self.amortization_years * 12
+
+    @property
+    def total_periods(self) -> int:
+        return self.amortization_years * self.periods_per_year
+
+    @property
+    def term_periods(self) -> int:
+        return round(self.term_months * self.periods_per_year / 12)
 
 
 @dataclass(frozen=True)
@@ -125,26 +138,28 @@ class VasicekRateEngine:
 
     def simulate(
         self,
-        n_months: int,
+        n_periods: int,
         n_paths: int,
         r0: float,
+        periods_per_year: int = 12,
     ) -> np.ndarray:
         """Generate rate paths.
 
         Args:
-            n_months: Number of monthly time-steps.
+            n_periods: Number of time-steps (periods).
             n_paths: Number of Monte-Carlo paths.
             r0: Initial short rate.
+            periods_per_year: Periods per year (12=monthly, 26=biweekly, 52=weekly).
 
         Returns:
-            np.ndarray of shape (n_months, n_paths) with annualised rates.
+            np.ndarray of shape (n_periods, n_paths) with annualised rates.
         """
-        dt: float = 1.0 / 12.0
-        paths = np.empty((n_months, n_paths), dtype=np.float64)
+        dt: float = 1.0 / periods_per_year
+        paths = np.empty((n_periods, n_paths), dtype=np.float64)
         paths[0, :] = r0
 
         # Pre-draw all shocks at once ó avoids Python-level loop overhead
-        z = self._rng.standard_normal((n_months - 1, n_paths))
+        z = self._rng.standard_normal((n_periods - 1, n_paths))
 
         sqrt_dt = np.sqrt(dt)
         for t in range(1, n_months):
@@ -193,21 +208,27 @@ class AmortizationEngine:
     # -- static helpers ----------------------------------------------------
 
     @staticmethod
-    def level_payment(principal: float, annual_rate: float, n_months: int) -> float:
+    def level_payment(
+        principal: float,
+        annual_rate: float,
+        n_periods: int,
+        periods_per_year: int = 12,
+    ) -> float:
         """Standard annuity payment formula.
 
         Args:
             principal: Loan balance.
             annual_rate: Annual nominal rate.
-            n_months: Total amortization months.
+            n_periods: Total amortization periods.
+            periods_per_year: Payment periods per year (12=monthly, 26=biweekly, 52=weekly).
 
         Returns:
-            Monthly payment amount.
+            Per-period payment amount.
         """
-        r = annual_rate / 12.0
+        r = annual_rate / periods_per_year
         if r == 0.0:
-            return principal / n_months
-        return principal * (r * (1 + r) ** n_months) / ((1 + r) ** n_months - 1)
+            return principal / n_periods
+        return principal * (r * (1 + r) ** n_periods) / ((1 + r) ** n_periods - 1)
 
     # -- single-path vectorized amortization -------------------------------
 
@@ -227,7 +248,8 @@ class AmortizationEngine:
         Returns:
             DataFrame with columns Month, Rate, Interest, Principal, Balance.
         """
-        n = self.mp.term_months
+        n = self.mp.term_periods
+        ppy = self.mp.periods_per_year
         balance = float(self.mp.principal)
 
         interest_arr = np.empty(n, dtype=np.float64)
@@ -239,7 +261,7 @@ class AmortizationEngine:
 
         for i in range(n):
             # Calculate interest on current balance
-            monthly_rate = annual_rates[i] / 12.0
+            monthly_rate = annual_rates[i] / ppy
             interest = balance * monthly_rate
             
             # Calculate principal payment from regular payment
@@ -261,7 +283,7 @@ class AmortizationEngine:
 
         return pd.DataFrame(
             {
-                "Month": np.arange(1, n + 1),
+                "Month": np.arange(1, n + 1),  # period index (month, biweek, or week)
                 "Rate": annual_rates[:n],
                 "Interest": interest_arr,
                 "Principal": principal_arr,
@@ -287,7 +309,8 @@ class AmortizationEngine:
         Returns:
             Tuple of (terminal balances, total interests), both shape (n_paths,).
         """
-        n = self.mp.term_months
+        n = self.mp.term_periods
+        ppy = self.mp.periods_per_year
         n_paths = rate_matrix.shape[1]
         balances = np.full(n_paths, self.mp.principal, dtype=np.float64)
         interests = np.zeros(n_paths, dtype=np.float64)
@@ -297,7 +320,7 @@ class AmortizationEngine:
 
         for t in range(n):
             # Calculate interest
-            monthly_rate = rate_matrix[t, :] / 12.0
+            monthly_rate = rate_matrix[t, :] / ppy
             interest = balances * monthly_rate
             interests += interest
             
@@ -328,7 +351,8 @@ class AmortizationEngine:
         Returns:
             np.ndarray of shape (term_months, n_paths) ó balance at each step.
         """
-        n = self.mp.term_months
+        n = self.mp.term_periods
+        ppy = self.mp.periods_per_year
         n_paths = rate_matrix.shape[1]
         balance_matrix = np.empty((n, n_paths), dtype=np.float64)
         balances = np.full(n_paths, self.mp.principal, dtype=np.float64)
@@ -338,7 +362,7 @@ class AmortizationEngine:
 
         for t in range(n):
             # Calculate interest and apply regular payment
-            monthly_rate = rate_matrix[t, :] / 12.0
+            monthly_rate = rate_matrix[t, :] / ppy
             interest = balances * monthly_rate
             princ = monthly_payment - interest
             balances = np.maximum(0.0, balances - princ)
@@ -396,8 +420,8 @@ class RiskAnalytics:
         Returns:
             1-D array of portfolio value at each month-end.
         """
-        n = self.mp.term_months
-        monthly_r = (1 + self.opp.equity_cagr) ** (1 / 12) - 1
+        n = self.mp.term_periods
+        monthly_r = (1 + self.opp.equity_cagr) ** (1 / self.mp.periods_per_year) - 1
         portfolio = np.zeros(n, dtype=np.float64)
         value = 0.0
         delta = base_payment - alt_payment
@@ -458,7 +482,7 @@ class RiskAnalytics:
             ls_amounts = np.arange(0, 60_001, 5_000, dtype=np.float64)
 
         engine = AmortizationEngine(self.mp)
-        flat_rates = np.full(self.mp.term_months, annual_rate)
+        flat_rates = np.full(self.mp.term_periods, annual_rate)
         results: List[Dict[str, float]] = []
 
         for ls in ls_amounts:
@@ -523,10 +547,10 @@ class ExecutiveDashboard:
 
         # Pre-compute level payments
         self.fixed_pmt = AmortizationEngine.level_payment(
-            self.mp.principal, self.mp.fixed_rate, self.mp.total_months
+            self.mp.principal, self.mp.fixed_rate, self.mp.total_periods, self.mp.periods_per_year
         )
         self.var_pmt = AmortizationEngine.level_payment(
-            self.mp.principal, self.mp.var_rate_start, self.mp.total_months
+            self.mp.principal, self.mp.var_rate_start, self.mp.total_periods, self.mp.periods_per_year
         )
 
     # -- helper: deterministic scenario schedules -------------------------
@@ -542,7 +566,7 @@ class ExecutiveDashboard:
         Returns:
             Dict mapping strategy label ? amortization DataFrame.
         """
-        n = self.mp.term_months
+        n = self.mp.term_periods
         flat_f = np.full(n, self.mp.fixed_rate)
         flat_v = np.full(n, self.mp.var_rate_start)
 
@@ -565,13 +589,15 @@ class ExecutiveDashboard:
         Returns:
             Dict mapping strategy label ? amortization DataFrame.
         """
-        n = self.mp.term_months
+        n = self.mp.term_periods
+        ppy = self.mp.periods_per_year
         flat_f = np.full(n, self.mp.fixed_rate)
         flat_v = np.full(n, self.mp.var_rate_start)
-        
-        # Stress scenario: +2% spike starting at month 12
+
+        # Stress scenario: +2% spike starting after period equivalent of month 12
         stress_rates = np.full(n, self.mp.var_rate_start)
-        stress_rates[12:] = self.mp.var_rate_start + 0.02  # 2% spike after year 1
+        spike_start = round(12 * ppy / 12)  # period index equivalent to month 12
+        stress_rates[spike_start:] = self.mp.var_rate_start + 0.02  # 2% spike after year 1
 
         return {
             "Fixed (4.10%)": self.amort_engine.amortize(flat_f, self.fixed_pmt),
@@ -765,7 +791,7 @@ class ExecutiveDashboard:
         )
         combined = std_var_equity + invest_portfolio
         ax.plot(
-            np.arange(1, self.mp.term_months + 1),
+            np.arange(1, self.mp.term_periods + 1),
             combined,
             color=self._C["invest"],
             lw=2,
@@ -876,7 +902,7 @@ class ExecutiveDashboard:
 
         # Stochastic paths
         paths = self.rate_engine.simulate(
-            self.mp.term_months, n_sims, self.mp.var_rate_start
+            self.mp.term_periods, n_sims, self.mp.var_rate_start, self.mp.periods_per_year
         )
 
         # Invest-the-difference
@@ -1080,7 +1106,7 @@ def plot_convexity_report(
         annual_rate = mortgage_params.var_rate_start
 
     pmt = AmortizationEngine.level_payment(
-        mortgage_params.principal, annual_rate, mortgage_params.total_months
+        mortgage_params.principal, annual_rate, mortgage_params.total_periods, mortgage_params.periods_per_year
     )
     risk = RiskAnalytics(mortgage_params)
     df = risk.lump_sum_convexity(annual_rate, pmt)

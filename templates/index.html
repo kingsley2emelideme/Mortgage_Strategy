@@ -74,11 +74,19 @@
           <h6 class="section-label mt-1">Mortgage Terms</h6>
           <div class="mb-3">
             <label class="form-label">Principal (CAD $)</label>
-            <input type="number" class="form-control form-control-sm" id="principal" value="360404" step="1000" min="50000" />
+            <input type="number" class="form-control form-control-sm" id="principal" value="100000" step="1000" min="50000" />
           </div>
           <div class="mb-3">
             <label class="form-label">Amortization (years)</label>
-            <input type="number" class="form-control form-control-sm" id="amortization_years" value="20" min="5" max="30" />
+            <input type="number" class="form-control form-control-sm" id="amortization_years" value="25" min="5" max="30" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Payment Frequency</label>
+            <select class="form-select form-select-sm" id="payment_frequency">
+              <option value="monthly" selected>Monthly (12/yr)</option>
+              <option value="biweekly">Bi-Weekly (26/yr)</option>
+              <option value="weekly">Weekly (52/yr)</option>
+            </select>
           </div>
           <div class="mb-3">
             <label class="form-label">Term (months)</label>

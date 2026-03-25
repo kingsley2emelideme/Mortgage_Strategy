@@ -35,6 +35,7 @@ function getInputs() {
   return {
     principal:           parseFloat($('principal').value),
     amortization_years:  parseInt($('amortization_years').value),
+    payment_frequency:   $('payment_frequency').value,
     term_months:         parseInt($('term_months').value),
     fixed_rate:          parseFloat($('fixed_rate').value) / 100,
     var_rate_start:      parseFloat($('var_rate_start').value) / 100,
@@ -438,11 +439,12 @@ async function loadSchedule() {
 
 // Reset to defaults
 function resetInputs() {
-  [['principal','360404'],['amortization_years','20'],['term_months','60'],
+  [['principal','100000'],['amortization_years','25'],['term_months','60'],
    ['fixed_rate','4.10'],['var_rate_start','3.35'],['lump_sum_amount','25000'],
    ['lump_sum_month','12'],['kappa','0.35'],['theta','3.5'],['sigma','1.2'],
    ['floor','2.25'],['equity_cagr','7.0']].forEach(([id, val]) => $(id).value = val);
   $('n_sims').value = '2000';
+  $('payment_frequency').value = 'monthly';
 }
 
 // ---------------------------------------------------------------------------

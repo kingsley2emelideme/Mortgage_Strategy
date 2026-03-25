@@ -32,11 +32,12 @@ app = Flask(__name__)
 def _parse_params(data: Dict[str, Any]) -> tuple[MortgageParams, VasicekParams, OpportunityCostParams]:
     """Extract and validate parameters from JSON request body."""
     mp = MortgageParams(
-        principal=float(data.get("principal", 360_404.0)),
-        amortization_years=int(data.get("amortization_years", 20)),
+        principal=float(data.get("principal", 100_000.0)),
+        amortization_years=int(data.get("amortization_years", 25)),
         fixed_rate=float(data.get("fixed_rate", 0.0410)),
         var_rate_start=float(data.get("var_rate_start", 0.0335)),
         term_months=int(data.get("term_months", 60)),
+        payment_frequency=str(data.get("payment_frequency", "monthly")),
     )
     vp = VasicekParams(
         kappa=float(data.get("kappa", 0.35)),
@@ -50,10 +51,15 @@ def _parse_params(data: Dict[str, Any]) -> tuple[MortgageParams, VasicekParams, 
     return mp, vp, opp
 
 
-def _parse_lump_sum(data: Dict[str, Any]) -> LumpSumSpec | None:
+def _parse_lump_sum(data: Dict[str, Any], mp: MortgageParams | None = None) -> LumpSumSpec | None:
     amount = float(data.get("lump_sum_amount", 0))
     month = int(data.get("lump_sum_month", 12))
-    return LumpSumSpec(amount=amount, month=month) if amount > 0 else None
+    # Convert from months to periods for non-monthly frequencies
+    if mp is not None and mp.periods_per_year != 12:
+        period = round(month * mp.periods_per_year / 12)
+    else:
+        period = month
+    return LumpSumSpec(amount=amount, month=period) if amount > 0 else None
 
 
 # ---------------------------------------------------------------------------
@@ -79,17 +85,18 @@ def calculate():
     try:
         data = request.get_json(force=True) or {}
         mp, vp, opp = _parse_params(data)
-        lump_sum = _parse_lump_sum(data)
+        lump_sum = _parse_lump_sum(data, mp)
         n_sims = int(data.get("n_sims", 2000))
 
         engine = AmortizationEngine(mp)
         risk = RiskAnalytics(mp, opp)
         rate_sim = VasicekRateEngine(vp, seed=42)
 
-        fixed_pmt = AmortizationEngine.level_payment(mp.principal, mp.fixed_rate, mp.total_months)
-        var_pmt = AmortizationEngine.level_payment(mp.principal, mp.var_rate_start, mp.total_months)
+        ppy = mp.periods_per_year
+        fixed_pmt = AmortizationEngine.level_payment(mp.principal, mp.fixed_rate, mp.total_periods, ppy)
+        var_pmt = AmortizationEngine.level_payment(mp.principal, mp.var_rate_start, mp.total_periods, ppy)
 
-        n = mp.term_months
+        n = mp.term_periods
         flat_f = np.full(n, mp.fixed_rate)
         flat_v = np.full(n, mp.var_rate_start)
 
@@ -101,7 +108,7 @@ def calculate():
         # Stress: variable rate +2 %
         stress_rate = mp.var_rate_start + 0.02
         flat_stress = np.full(n, stress_rate)
-        stress_pmt = AmortizationEngine.level_payment(mp.principal, stress_rate, mp.total_months)
+        stress_pmt = AmortizationEngine.level_payment(mp.principal, stress_rate, mp.total_periods, ppy)
         df_stress = engine.amortize(flat_stress, stress_pmt)
 
         months = list(range(1, n + 1))
@@ -116,7 +123,7 @@ def calculate():
             }
 
         # -- Stochastic fan chart --
-        rate_paths = rate_sim.simulate(n, n_sims, mp.var_rate_start)
+        rate_paths = rate_sim.simulate(n, n_sims, mp.var_rate_start, ppy)
         pcts = rate_sim.percentiles(rate_paths, quantiles=(0.10, 0.25, 0.50, 0.75, 0.90))
 
         # -- MC terminal interest distribution --
@@ -197,29 +204,30 @@ def amortize():
     try:
         data = request.get_json(force=True) or {}
         mp, _vp, _opp = _parse_params(data)
-        lump_sum = _parse_lump_sum(data)
+        lump_sum = _parse_lump_sum(data, mp)
         strategy = data.get("strategy", "fixed")
 
         engine = AmortizationEngine(mp)
-        n = mp.term_months
+        ppy = mp.periods_per_year
+        n = mp.term_periods
 
         if strategy == "fixed":
             rate = mp.fixed_rate
-            pmt = AmortizationEngine.level_payment(mp.principal, rate, mp.total_months)
+            pmt = AmortizationEngine.level_payment(mp.principal, rate, mp.total_periods, ppy)
             rates = np.full(n, rate)
             df = engine.amortize(rates, pmt)
         elif strategy == "variable":
             rate = mp.var_rate_start
-            pmt = AmortizationEngine.level_payment(mp.principal, rate, mp.total_months)
+            pmt = AmortizationEngine.level_payment(mp.principal, rate, mp.total_periods, ppy)
             rates = np.full(n, rate)
             df = engine.amortize(rates, pmt)
         elif strategy == "hedged":
-            fixed_pmt = AmortizationEngine.level_payment(mp.principal, mp.fixed_rate, mp.total_months)
+            fixed_pmt = AmortizationEngine.level_payment(mp.principal, mp.fixed_rate, mp.total_periods, ppy)
             rates = np.full(n, mp.var_rate_start)
             df = engine.amortize(rates, fixed_pmt, lump_sum=lump_sum)
         elif strategy == "stress":
             stress_rate = mp.var_rate_start + 0.02
-            pmt = AmortizationEngine.level_payment(mp.principal, stress_rate, mp.total_months)
+            pmt = AmortizationEngine.level_payment(mp.principal, stress_rate, mp.total_periods, ppy)
             rates = np.full(n, stress_rate)
             df = engine.amortize(rates, pmt)
         else:
