@@ -255,36 +255,45 @@
 
         <h3>3.1 Level-Payment (Annuity) Formula</h3>
         <p>
-          The standard monthly payment \(M\) for a loan of principal \(P\), annual nominal rate \(r\),
-          over \(n\) total amortization months is:
+          The standard per-period payment \(M\) for a loan of principal \(P\), annual nominal rate \(r\),
+          over \(n\) total amortization periods, with \(f\) payment periods per year, is:
         </p>
         <div class="formula-box">
-          $$M = P \cdot \frac{r_m \,(1 + r_m)^n}{(1 + r_m)^n - 1}$$
+          $$M = P \cdot \frac{r_p \,(1 + r_p)^n}{(1 + r_p)^n - 1}$$
         </div>
-        <p>where \(r_m = r / 12\) is the monthly rate.</p>
+        <p>
+          where \(r_p = r / f\) is the per-period rate. The tool supports three payment frequencies:
+          <strong>monthly</strong> (\(f = 12\)), <strong>bi-weekly</strong> (\(f = 26\)), and
+          <strong>weekly</strong> (\(f = 52\)). All amortization calculations and Monte Carlo simulations
+          automatically scale to the selected frequency.
+        </p>
 
-        <h3>3.2 Monthly Decomposition</h3>
-        <p>At each month \(t\), the payment splits into:</p>
+        <h3>3.2 Per-Period Decomposition</h3>
+        <p>At each period \(t\), the payment splits into:</p>
         <div class="formula-box">
-          $$\text{Interest}_t = B_{t-1} \cdot r_m \qquad \text{Principal}_t = M - \text{Interest}_t \qquad B_t = \max(0,\; B_{t-1} - \text{Principal}_t)$$
+          $$\text{Interest}_t = B_{t-1} \cdot r_p \qquad \text{Principal}_t = M - \text{Interest}_t \qquad B_t = \max(0,\; B_{t-1} - \text{Principal}_t)$$
         </div>
         <p>
           where \(B_t\) is the outstanding balance after payment \(t\). The balance declines slowly in
-          early months (most of \(M\) is interest) and accelerates toward zero as the loan matures —
+          early periods (most of \(M\) is interest) and accelerates toward zero as the loan matures —
           the characteristic convex amortization profile visible in the <em>Balance Trajectories</em> chart.
+          Higher-frequency payments (bi-weekly, weekly) reduce the balance slightly faster because interest
+          accrues over a shorter period between payments.
         </p>
 
         <h3>3.3 Lump-Sum Prepayment</h3>
         <p>
-          When a prepayment \(L\) is applied at month \(k\), it reduces the balance <em>after</em>
-          the regular payment for that month:
+          When a prepayment \(L\) is applied at period \(k\), it reduces the balance <em>after</em>
+          the regular payment for that period:
         </p>
         <div class="formula-box">
           $$B_k = \max\!\left(0,\; B_{k-1} - \text{Principal}_k - \min(L,\, B_{k-1} - \text{Principal}_k)\right)$$
         </div>
         <p>
-          Because the reduced balance compounds for the remaining \(n - k\) months, the interest saving
-          from a prepayment is highly non-linear (see <em>§8 Convexity</em>).
+          The lump-sum month entered by the user (e.g. month 12) is automatically converted to the
+          equivalent period index for non-monthly frequencies. Because the reduced balance compounds
+          for the remaining \(n - k\) periods, the interest saving from a prepayment is highly non-linear
+          (see <em>§8 Convexity</em>).
         </p>
       </div>
 
@@ -356,8 +365,9 @@
 
         <h3>5.1 From Continuous to Discrete Time</h3>
         <p>
-          To simulate thousands of rate paths on a computer, the continuous SDE is discretised to monthly steps
-          \(\Delta t = \tfrac{1}{12}\) using the <strong>Euler–Maruyama</strong> scheme:
+          To simulate thousands of rate paths on a computer, the continuous SDE is discretised to
+          period steps \(\Delta t = \tfrac{1}{f}\) (where \(f\) is the number of payment periods per year:
+          12 monthly, 26 bi-weekly, or 52 weekly) using the <strong>Euler–Maruyama</strong> scheme:
         </p>
         <div class="formula-box">
           $$r_{t+\Delta t} = \max\!\left(r_{\text{floor}},\;\; r_t + \kappa(\theta - r_t)\,\Delta t + \sigma\sqrt{\Delta t}\;Z_t\right)$$
@@ -367,7 +377,7 @@
         <h3>5.2 Vectorized Implementation</h3>
         <p>
           All \(N\) paths (default 2,000) are simulated simultaneously in a matrix of shape
-          \((\text{months} \times N)\). At each time step \(t\), the update is:
+          \((\text{periods} \times N)\). At each time step \(t\), the update is:
         </p>
         <div class="formula-box">
           $$\mathbf{r}_{t+1} = \max\!\left(r_{\text{floor}},\;\; \mathbf{r}_t + \kappa(\theta - \mathbf{r}_t)\,\Delta t + \sigma\sqrt{\Delta t}\;\mathbf{Z}_t\right)$$
@@ -378,7 +388,7 @@
         </p>
 
         <h3>5.3 Fan Chart Interpretation</h3>
-        <p>The fan chart plots cross-sectional percentiles across all simulated paths at each month:</p>
+        <p>The fan chart plots cross-sectional percentiles across all simulated paths at each period:</p>
         <ul>
           <li><strong>P50 (median)</strong> — the most likely rate trajectory.</li>
           <li><strong>P10 / P90 band</strong> — 80% of all simulated scenarios fall within this range.</li>
@@ -394,23 +404,23 @@
       <div class="section-card" id="sec-opportunity">
         <h2><i class="bi bi-graph-up-arrow me-2"></i>6. Opportunity Cost — Invest-the-Difference</h2>
         <p>
-          Choosing the variable rate frees up the monthly payment delta \(\delta = M_f - M_v\) each month.
+          Choosing the variable rate frees up the per-period payment delta \(\delta = M_f - M_v\) each period.
           The <em>invest-the-difference</em> model asks: <strong>what if this saving were invested in equities</strong>
           instead of used to pay down the mortgage faster?
         </p>
         <p>
-          If the equity portfolio compounds at CAGR \(g\), the monthly growth factor is:
+          If the equity portfolio compounds at CAGR \(g\), the per-period growth factor is:
         </p>
         <div class="formula-box">
-          $$\mu_m = (1 + g)^{1/12} - 1$$
+          $$\mu_p = (1 + g)^{1/f} - 1$$
         </div>
-        <p>The portfolio value at month \(t\) evolves as:</p>
+        <p>The portfolio value at period \(t\) evolves as:</p>
         <div class="formula-box">
-          $$V_t = (V_{t-1} + c_t)\,(1 + \mu_m), \qquad c_t = \delta + L \cdot \mathbf{1}[t = k]$$
+          $$V_t = (V_{t-1} + c_t)\,(1 + \mu_p), \qquad c_t = \delta + L \cdot \mathbf{1}[t = k]$$
         </div>
         <p>
-          where \(c_t\) is the total monthly contribution (payment delta plus any lump sum in month \(k\)).
-          The terminal value \(V_{60}\) is compared against the interest savings of the Hedged strategy to
+          where \(c_t\) is the total per-period contribution (payment delta plus any lump sum at period \(k\)).
+          The terminal value is compared against the interest savings of the Hedged strategy to
           determine which creates more wealth.
         </p>
 
@@ -484,13 +494,14 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td>Principal</td><td>\(P\)</td><td>$360,404</td><td>Initial outstanding mortgage balance (CAD)</td></tr>
-              <tr><td>Amortization</td><td>\(n\)</td><td>20 years (240 months)</td><td>Full loan repayment horizon</td></tr>
+              <tr><td>Principal</td><td>\(P\)</td><td>$750,000</td><td>Initial outstanding mortgage balance (CAD)</td></tr>
+              <tr><td>Amortization</td><td>\(n\)</td><td>25 years (300 months)</td><td>Full loan repayment horizon</td></tr>
+              <tr><td>Payment Frequency</td><td>\(f\)</td><td>Monthly (12/yr)</td><td>Payment cadence: Monthly (12), Bi-Weekly (26), or Weekly (52) periods per year</td></tr>
               <tr><td>Term</td><td>—</td><td>60 months</td><td>Evaluation / renewal window (typically 5 years in Canada)</td></tr>
               <tr><td>Fixed rate</td><td>\(r_f\)</td><td>4.10%</td><td>Annual nominal rate for fixed-rate mortgage</td></tr>
               <tr><td>Variable rate start</td><td>\(r_v\)</td><td>3.35%</td><td>Initial annual variable rate (Bank of Canada prime-linked)</td></tr>
-              <tr><td>Lump-sum amount</td><td>\(L\)</td><td>$25,000</td><td>One-time prepayment applied at month \(k\)</td></tr>
-              <tr><td>Lump-sum month</td><td>\(k\)</td><td>12</td><td>Month in which the lump sum is applied (1-indexed)</td></tr>
+              <tr><td>Lump-sum amount</td><td>\(L\)</td><td>$25,000</td><td>One-time prepayment applied at period \(k\)</td></tr>
+              <tr><td>Lump-sum month</td><td>\(k\)</td><td>12</td><td>Month in which the lump sum is applied; auto-converted to the equivalent period for non-monthly frequencies</td></tr>
               <tr><td>Mean reversion speed</td><td>\(\kappa\)</td><td>0.35</td><td>Vasicek mean-reversion speed toward \(\theta\)</td></tr>
               <tr><td>Long-run rate</td><td>\(\theta\)</td><td>3.5%</td><td>Vasicek equilibrium rate (calibrated to BoC neutral rate)</td></tr>
               <tr><td>Rate volatility</td><td>\(\sigma\)</td><td>1.2%</td><td>Vasicek instantaneous volatility of rate changes</td></tr>
