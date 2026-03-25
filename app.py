@@ -52,7 +52,7 @@ def _parse_params(data: Dict[str, Any]) -> tuple[MortgageParams, VasicekParams, 
 
 
 def _parse_lump_sum(data: Dict[str, Any], mp: MortgageParams | None = None) -> LumpSumSpec | None:
-    amount = float(data.get("lump_sum_amount", 0))
+    amount = float(data.get("lump_sum_amount") or 0)
     month = int(data.get("lump_sum_month", 12))
     # Convert from months to periods for non-monthly frequencies
     if mp is not None and mp.periods_per_year != 12:
