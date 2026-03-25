@@ -97,7 +97,7 @@ class LumpSumSpec:
         month: 1-indexed month in which the prepayment occurs.
     """
 
-    amount: float = 0.0
+    amount: float = 20_000.0
     month: int = 12
 
 
