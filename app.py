@@ -32,7 +32,7 @@ app = Flask(__name__)
 def _parse_params(data: Dict[str, Any]) -> tuple[MortgageParams, VasicekParams, OpportunityCostParams]:
     """Extract and validate parameters from JSON request body."""
     mp = MortgageParams(
-        principal=float(data.get("principal", 100_000.0)),
+        principal=float(data.get("principal", 750_000.0)),
         amortization_years=int(data.get("amortization_years", 25)),
         fixed_rate=float(data.get("fixed_rate", 0.0410)),
         var_rate_start=float(data.get("var_rate_start", 0.0335)),

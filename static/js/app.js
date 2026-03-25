@@ -439,7 +439,7 @@ async function loadSchedule() {
 
 // Reset to defaults
 function resetInputs() {
-  [['principal','100000'],['amortization_years','25'],['term_months','60'],
+  [['principal','750000'],['amortization_years','25'],['term_months','60'],
    ['fixed_rate','4.10'],['var_rate_start','3.35'],['lump_sum_amount','25000'],
    ['lump_sum_month','12'],['kappa','0.35'],['theta','3.5'],['sigma','1.2'],
    ['floor','2.25'],['equity_cagr','7.0']].forEach(([id, val]) => $(id).value = val);

@@ -45,7 +45,7 @@ class MortgageParams:
         term_months: Evaluation / renewal window (default 60 = 5 yr).
     """
 
-    principal: float = 100_000.0
+    principal: float = 750_000.0
     amortization_years: int = 25
     fixed_rate: float = 0.0410
     var_rate_start: float = 0.0335
@@ -162,7 +162,7 @@ class VasicekRateEngine:
         z = self._rng.standard_normal((n_periods - 1, n_paths))
 
         sqrt_dt = np.sqrt(dt)
-        for t in range(1, n_months):
+        for t in range(1, n_periods):
             drift = self.p.kappa * (self.p.theta - paths[t - 1, :]) * dt
             diffusion = self.p.sigma * sqrt_dt * z[t - 1, :]
             paths[t, :] = np.maximum(self.p.floor, paths[t - 1, :] + drift + diffusion)
