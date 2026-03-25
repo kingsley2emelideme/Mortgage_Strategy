@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mortgage Rate Strategy</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- jsPDF + html2canvas for export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+
+<!-- ======= NAVBAR ======================================================== -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary-dark sticky-top shadow-sm">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+      <i class="bi bi-house-check-fill fs-4"></i>
+      <span class="fw-bold">Mortgage Rate Strategy</span>
+    </a>
+    <div class="ms-auto d-flex align-items-center gap-3">
+      <span class="text-white-50 small d-none d-md-block">Asset-Liability Management Engine</span>
+      <button class="btn btn-outline-light btn-sm" id="btnReset">
+        <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ======= HERO BANNER =================================================== -->
+<div class="hero-banner">
+  <div class="container-fluid px-4 py-4">
+    <div class="row align-items-center">
+      <div class="col-lg-8">
+        <h1 class="hero-title mb-1">Mortgage Rate Strategy Analyser</h1>
+        <p class="hero-sub mb-0">
+          Compare fixed vs. variable mortgage strategies with Monte Carlo rate simulation,
+          amortization modelling, and opportunity-cost analytics.
+        </p>
+      </div>
+      <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+        <button class="btn btn-success btn-lg px-4 shadow" id="btnRun">
+          <i class="bi bi-play-circle-fill me-2"></i>Run Analysis
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= MAIN CONTENT ================================================== -->
+<div class="container-fluid px-4 py-4">
+  <div class="row g-4">
+
+    <!-- ---- LEFT PANEL: Inputs ------------------------------------------ -->
+    <div class="col-xl-3 col-lg-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-primary text-white">
+          <i class="bi bi-sliders me-2"></i><strong>Scenario Parameters</strong>
+        </div>
+        <div class="card-body overflow-auto" style="max-height: calc(100vh - 200px);">
+
+          <!-- Mortgage Terms -->
+          <h6 class="section-label mt-1">Mortgage Terms</h6>
+          <div class="mb-3">
+            <label class="form-label">Principal (CAD $)</label>
+            <input type="number" class="form-control form-control-sm" id="principal" value="360404" step="1000" min="50000" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Amortization (years)</label>
+            <input type="number" class="form-control form-control-sm" id="amortization_years" value="20" min="5" max="30" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Term (months)</label>
+            <input type="number" class="form-control form-control-sm" id="term_months" value="60" min="12" max="120" />
+          </div>
+
+          <hr class="my-3" />
+
+          <!-- Rates -->
+          <h6 class="section-label">Interest Rates</h6>
+          <div class="mb-3">
+            <label class="form-label">Fixed Rate (%)</label>
+            <input type="number" class="form-control form-control-sm" id="fixed_rate" value="4.10" step="0.05" min="0.5" max="15" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Variable Rate Start (%)</label>
+            <input type="number" class="form-control form-control-sm" id="var_rate_start" value="3.35" step="0.05" min="0.5" max="15" />
+          </div>
+
+          <hr class="my-3" />
+
+          <!-- Lump Sum -->
+          <h6 class="section-label">Lump-Sum Prepayment</h6>
+          <div class="mb-3">
+            <label class="form-label">Amount (CAD $)</label>
+            <input type="number" class="form-control form-control-sm" id="lump_sum_amount" value="25000" step="1000" min="0" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">At Month</label>
+            <input type="number" class="form-control form-control-sm" id="lump_sum_month" value="12" min="1" max="120" />
+          </div>
+
+          <hr class="my-3" />
+
+          <!-- Vasicek -->
+          <h6 class="section-label">Rate Model (Vasicek)</h6>
+          <div class="mb-3">
+            <label class="form-label">Mean Reversion κ</label>
+            <input type="number" class="form-control form-control-sm" id="kappa" value="0.35" step="0.05" min="0.01" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Long-run Rate θ (%)</label>
+            <input type="number" class="form-control form-control-sm" id="theta" value="3.5" step="0.1" min="0.5" max="15" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Volatility σ (%)</label>
+            <input type="number" class="form-control form-control-sm" id="sigma" value="1.2" step="0.1" min="0.1" max="10" />
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Rate Floor (%)</label>
+            <input type="number" class="form-control form-control-sm" id="floor" value="2.25" step="0.05" min="0" max="5" />
+          </div>
+
+          <hr class="my-3" />
+
+          <!-- Opportunity Cost -->
+          <h6 class="section-label">Opportunity Cost</h6>
+          <div class="mb-3">
+            <label class="form-label">Equity CAGR (%)</label>
+            <input type="number" class="form-control form-control-sm" id="equity_cagr" value="7.0" step="0.5" min="1" max="20" />
+          </div>
+
+          <hr class="my-3" />
+
+          <!-- Simulation -->
+          <h6 class="section-label">Monte Carlo</h6>
+          <div class="mb-3">
+            <label class="form-label">Simulations</label>
+            <select class="form-select form-select-sm" id="n_sims">
+              <option value="500">500 (fast)</option>
+              <option value="2000" selected>2,000 (default)</option>
+              <option value="5000">5,000 (accurate)</option>
+              <option value="10000">10,000 (slow)</option>
+            </select>
+          </div>
+
+          <div class="d-grid mt-4">
+            <button class="btn btn-primary" id="btnRunBottom">
+              <i class="bi bi-play-circle-fill me-2"></i>Run Analysis
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- RIGHT PANEL: Results ---------------------------------------- -->
+    <div class="col-xl-9 col-lg-8">
+
+      <!-- Loading overlay -->
+      <div id="loadingOverlay" class="d-none">
+        <div class="loading-box">
+          <div class="spinner-border text-primary mb-3" role="status"></div>
+          <p class="mb-0 fw-semibold">Running Monte Carlo simulation…</p>
+        </div>
+      </div>
+
+      <!-- Placeholder state -->
+      <div id="placeholderState" class="text-center py-5 text-muted">
+        <i class="bi bi-graph-up-arrow" style="font-size:4rem; opacity:.3;"></i>
+        <p class="mt-3 fs-5">Configure parameters and click <strong>Run Analysis</strong> to begin.</p>
+      </div>
+
+      <!-- Results (hidden until first run) -->
+      <div id="resultsContainer" class="d-none">
+
+        <!-- KPI Cards -->
+        <div class="row g-3 mb-4" id="kpiRow"></div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="chartTabs" role="tablist">
+          <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabBalance">Balance Trajectories</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabInterest">Interest Paid</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabFan">Rate Fan Chart</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabMC">MC Distribution</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabOpp">Opportunity Cost</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabConvexity">Convexity</button></li>
+          <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabSchedule">Amortization Table</button></li>
+        </ul>
+
+        <div class="tab-content card border-top-0 shadow-sm" id="chartTabContent">
+
+          <!-- Tab: Balance -->
+          <div class="tab-pane fade show active p-3" id="tabBalance">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0 fw-semibold text-secondary">Outstanding Balance by Strategy</h6>
+              <div class="export-btns" data-chart="chartBalance" data-label="Balance_Trajectories"></div>
+            </div>
+            <div class="chart-wrapper"><canvas id="chartBalance"></canvas></div>
+          </div>
+
+          <!-- Tab: Cumulative Interest -->
+          <div class="tab-pane fade p-3" id="tabInterest">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0 fw-semibold text-secondary">Cumulative Interest Paid</h6>
+              <div class="export-btns" data-chart="chartInterest" data-label="Cumulative_Interest"></div>
+            </div>
+            <div class="chart-wrapper"><canvas id="chartInterest"></canvas></div>
+          </div>
+
+          <!-- Tab: Fan Chart -->
+          <div class="tab-pane fade p-3" id="tabFan">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0 fw-semibold text-secondary">Vasicek Rate Fan Chart (Monte Carlo Percentiles)</h6>
+              <div class="export-btns" data-chart="chartFan" data-label="Rate_Fan_Chart"></div>
+            </div>
+            <div class="chart-wrapper"><canvas id="chartFan"></canvas></div>
+          </div>
+
+          <!-- Tab: MC Histogram -->
+          <div class="tab-pane fade p-3" id="tabMC">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0 fw-semibold text-secondary">Monte Carlo: Total Interest Distribution (Variable Rate)</h6>
+              <div class="export-btns" data-chart="chartMC" data-label="MC_Distribution"></div>
+            </div>
+            <div class="chart-wrapper"><canvas id="chartMC"></canvas></div>
+          </div>
+
+          <!-- Tab: Opportunity Cost -->
+          <div class="tab-pane fade p-3" id="tabOpp">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0 fw-semibold text-secondary">Invest-the-Difference: Portfolio Growth vs. Mortgage Savings</h6>
+              <div class="export-btns" data-chart="chartOpp" data-label="Opportunity_Cost"></div>
+            </div>
+            <div class="chart-wrapper"><canvas id="chartOpp"></canvas></div>
+          </div>
+
+          <!-- Tab: Convexity -->
+          <div class="tab-pane fade p-3" id="tabConvexity">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="mb-0 fw-semibold text-secondary">Lump-Sum Convexity: Interest Savings vs Prepayment Size</h6>
+              <div class="export-btns" data-chart="chartConvexity" data-label="Convexity_Analysis"></div>
+            </div>
+            <div class="chart-wrapper"><canvas id="chartConvexity"></canvas></div>
+          </div>
+
+          <!-- Tab: Amortization Table -->
+          <div class="tab-pane fade p-3" id="tabSchedule">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+              <h6 class="mb-0 fw-semibold text-secondary">Amortization Schedule</h6>
+              <div class="d-flex gap-2 align-items-center flex-wrap">
+                <select class="form-select form-select-sm" id="scheduleStrategy" style="width:auto;">
+                  <option value="fixed">Fixed Rate</option>
+                  <option value="variable">Variable Rate</option>
+                  <option value="hedged">Hedged Variable</option>
+                  <option value="stress">Stress (+2%)</option>
+                </select>
+                <button class="btn btn-sm btn-outline-secondary" id="btnLoadSchedule">
+                  <i class="bi bi-arrow-repeat me-1"></i>Load
+                </button>
+                <button class="btn btn-sm btn-outline-success" id="btnExportCSV">
+                  <i class="bi bi-filetype-csv me-1"></i>Export CSV
+                </button>
+                <button class="btn btn-sm btn-outline-danger" id="btnExportTablePDF">
+                  <i class="bi bi-filetype-pdf me-1"></i>Export PDF
+                </button>
+              </div>
+            </div>
+            <div class="table-responsive" style="max-height:520px; overflow-y:auto;">
+              <table class="table table-sm table-striped table-hover table-bordered align-middle mb-0" id="scheduleTable">
+                <thead class="table-dark sticky-top">
+                  <tr>
+                    <th>Month</th>
+                    <th>Rate (%)</th>
+                    <th>Payment ($)</th>
+                    <th>Interest ($)</th>
+                    <th>Principal ($)</th>
+                    <th>Balance ($)</th>
+                    <th>Cum. Interest ($)</th>
+                    <th>Cum. Principal ($)</th>
+                  </tr>
+                </thead>
+                <tbody id="scheduleBody">
+                  <tr><td colspan="8" class="text-center text-muted py-4">Run analysis first, then click Load.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div><!-- /tab-content -->
+      </div><!-- /resultsContainer -->
+    </div><!-- /right panel -->
+  </div><!-- /row -->
+</div><!-- /container -->
+
+<!-- ======= FOOTER ======================================================== -->
+<footer class="footer mt-5 py-3 bg-light border-top">
+  <div class="container-fluid px-4 text-center text-muted small">
+    Mortgage Rate Strategy Engine &mdash; Asset-Liability Management Tool &mdash;
+    Powered by Vasicek SDE Monte Carlo &amp; Vectorized Amortization
+  </div>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>

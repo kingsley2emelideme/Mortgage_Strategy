@@ -1,0 +1,188 @@
+/* =========================================================================
+   Mortgage Rate Strategy — Stylesheet
+   ========================================================================= */
+
+:root {
+  --color-fixed:    #1f4e79;
+  --color-variable: #d4820a;
+  --color-hedged:   #2e7d32;
+  --color-stress:   #c62828;
+  --color-invest:   #6a1b9a;
+  --color-bg:       #f5f7fa;
+  --color-card:     #ffffff;
+  --nav-dark:       #0d2137;
+  --primary-dark:   #1a3a5c;
+}
+
+/* ----- Base ---------------------------------------------------------------- */
+body {
+  background-color: var(--color-bg);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  color: #212529;
+}
+
+/* ----- Navbar -------------------------------------------------------------- */
+.bg-primary-dark { background-color: var(--nav-dark) !important; }
+
+/* ----- Hero Banner --------------------------------------------------------- */
+.hero-banner {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, #1f6aa5 50%, #2a9d8f 100%);
+  color: #fff;
+  border-bottom: 3px solid rgba(255,255,255,0.15);
+}
+
+.hero-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hero-sub {
+  font-size: 0.925rem;
+  color: rgba(255,255,255,0.8);
+  max-width: 640px;
+}
+
+/* ----- Sidebar section labels ---------------------------------------------- */
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6c757d;
+  margin-bottom: 0.5rem;
+}
+
+/* ----- KPI Cards ----------------------------------------------------------- */
+.kpi-card {
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 90px;
+  height: 90px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 50%;
+}
+
+.kpi-card .kpi-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+  margin-bottom: 0.25rem;
+}
+
+.kpi-card .kpi-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.kpi-card .kpi-sub {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}
+
+.kpi-fixed    { background: linear-gradient(135deg, #1f4e79, #2980b9); }
+.kpi-variable { background: linear-gradient(135deg, #b7590a, #e67e22); }
+.kpi-hedged   { background: linear-gradient(135deg, #1b5e20, #2e7d32); }
+.kpi-savings  { background: linear-gradient(135deg, #4a148c, #7b1fa2); }
+
+/* ----- Tab panel ----------------------------------------------------------- */
+.nav-tabs .nav-link {
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.5rem 0.85rem;
+  color: #495057;
+}
+
+.nav-tabs .nav-link.active {
+  color: var(--primary-dark);
+  font-weight: 700;
+  border-bottom: 3px solid var(--primary-dark);
+}
+
+.tab-content.card {
+  border-radius: 0 0 8px 8px;
+}
+
+/* ----- Chart wrapper ------------------------------------------------------- */
+.chart-wrapper {
+  position: relative;
+  height: 380px;
+}
+
+/* ----- Export buttons ------------------------------------------------------ */
+.export-btn-group {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.export-btn-group .btn {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.6rem;
+}
+
+/* ----- Loading overlay ----------------------------------------------------- */
+#loadingOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255,255,255,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(3px);
+}
+
+.loading-box {
+  text-align: center;
+  background: #fff;
+  padding: 2.5rem 3rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
+/* ----- Table --------------------------------------------------------------- */
+#scheduleTable thead th {
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+#scheduleTable tbody td {
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* Highlight lump-sum month */
+.lump-sum-row td {
+  background-color: #fff3cd !important;
+  font-weight: 600;
+}
+
+/* ----- Responsive tweaks --------------------------------------------------- */
+@media (max-width: 991px) {
+  .chart-wrapper { height: 280px; }
+  .hero-title    { font-size: 1.3rem; }
+}
+
+/* ----- Footer -------------------------------------------------------------- */
+.footer { font-size: 0.78rem; }
+
+/* ----- Scrollbar styling --------------------------------------------------- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #c0c0c0; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #999; }
