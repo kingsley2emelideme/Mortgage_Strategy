@@ -329,7 +329,7 @@ function renderScheduleTable(rows, strategy, lumpSumMonth) {
   const strategyPmtMap = { fixed: rows[0] ? (rows[0].Interest + rows[0].Principal) : 0 };
   tbody.innerHTML = rows.map(row => {
     const pmt = (row.Interest + row.Principal).toFixed(2);
-    const isLS = row.Month === lumpSumMonth && strategy === 'hedged';
+    const isLS = row.Month === lumpSumMonth && strategy !== 'stress';
     return `<tr class="${isLS ? 'lump-sum-row' : ''}">
       <td>${row.Month}${isLS ? ' <span class="badge bg-warning text-dark">LS</span>' : ''}</td>
       <td>${(row.Rate * 100).toFixed(3)}%</td>

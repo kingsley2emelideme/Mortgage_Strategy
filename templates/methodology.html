@@ -213,21 +213,21 @@
                 <td><span class="strategy-badge badge-fixed">Fixed Baseline</span></td>
                 <td>Fixed payment \(M_f\)</td>
                 <td>Fixed rate \(r_f\) throughout</td>
-                <td>None</td>
+                <td>\(\$L\) at period \(k\)</td>
                 <td>Certainty benchmark — locks in known cost</td>
               </tr>
               <tr>
                 <td><span class="strategy-badge badge-variable">Standard Variable</span></td>
                 <td>Lower variable payment \(M_v\)</td>
                 <td>Variable rate \(r_v\) (flat assumption)</td>
-                <td>None</td>
+                <td>\(\$L\) at period \(k\)</td>
                 <td>Lower cost if rates stay flat or fall</td>
               </tr>
               <tr>
                 <td><span class="strategy-badge badge-hedged">Hedged Variable</span></td>
                 <td>Fixed payment \(M_f\) at variable rate</td>
                 <td>Variable rate \(r_v\)</td>
-                <td>\(\$L\) at month \(k\)</td>
+                <td>\(\$L\) at period \(k\)</td>
                 <td>Best of both: variable rate, fixed-rate discipline, accelerated paydown</td>
               </tr>
               <tr>
@@ -243,9 +243,12 @@
 
         <div class="insight-box">
           <div class="insight-title"><i class="bi bi-lightbulb-fill me-1"></i>Key Insight for Decision-Making</div>
-          The <strong>Hedged Variable</strong> strategy is typically the most efficient: the borrower benefits
-          from the lower variable rate but maintains the higher fixed payment, so every dollar of payment delta
-          attacks the principal directly — compounding the savings over the full amortization period.
+          The lump-sum prepayment \(\$L\) applies to the <strong>Fixed</strong>, <strong>Standard Variable</strong>,
+          and <strong>Hedged Variable</strong> strategies equally — allowing a fair, apples-to-apples comparison
+          of how the same prepayment performs under each rate structure. The <strong>Hedged Variable</strong>
+          strategy is typically the most efficient: the borrower benefits from the lower variable rate but
+          maintains the higher fixed payment, so every dollar of payment delta attacks the principal directly —
+          compounding the savings over the full amortization period.
         </div>
       </div>
 

@@ -101,8 +101,8 @@ def calculate():
         flat_v = np.full(n, mp.var_rate_start)
 
         # -- Deterministic schedules --
-        df_fixed = engine.amortize(flat_f, fixed_pmt)
-        df_var = engine.amortize(flat_v, var_pmt)
+        df_fixed = engine.amortize(flat_f, fixed_pmt, lump_sum=lump_sum)
+        df_var = engine.amortize(flat_v, var_pmt, lump_sum=lump_sum)
         df_hedged = engine.amortize(flat_v, fixed_pmt, lump_sum=lump_sum)
 
         # Stress: variable rate +2 %
@@ -215,12 +215,12 @@ def amortize():
             rate = mp.fixed_rate
             pmt = AmortizationEngine.level_payment(mp.principal, rate, mp.total_periods, ppy)
             rates = np.full(n, rate)
-            df = engine.amortize(rates, pmt)
+            df = engine.amortize(rates, pmt, lump_sum=lump_sum)
         elif strategy == "variable":
             rate = mp.var_rate_start
             pmt = AmortizationEngine.level_payment(mp.principal, rate, mp.total_periods, ppy)
             rates = np.full(n, rate)
-            df = engine.amortize(rates, pmt)
+            df = engine.amortize(rates, pmt, lump_sum=lump_sum)
         elif strategy == "hedged":
             fixed_pmt = AmortizationEngine.level_payment(mp.principal, mp.fixed_rate, mp.total_periods, ppy)
             rates = np.full(n, mp.var_rate_start)
